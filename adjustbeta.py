@@ -1,5 +1,9 @@
+# %%
 import numpy as np
-
+from sklearn.neighbors import kneighbors_graph
+from tqdm import trange
+import torch
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def Hbeta(D, beta=1.0):
     """
@@ -20,10 +24,15 @@ def Hbeta(D, beta=1.0):
     P : numpy.ndarray
         probability matrix (n,n)
     """
-    num = np.exp(-D * beta)
-    den = np.sum(np.exp(-D * beta), 0)
+    beta = torch.tensor(beta, dtype=torch.float32).to(device)
+    num = torch.exp(-D * beta)
+    den = torch.sum(torch.exp(-D * beta), 0)
+    num = num.to(device)
+    den = den.to(device)
     P = num / den
-    H = np.log(den) + beta * np.sum(D * num) / (den)
+    H = torch.log(den) + beta * torch.sum(D * num) / (den)
+    P = P.cpu().detach().numpy()
+    H = H.cpu().detach().numpy()
     return H, P
 
 def calculate_euc_sqr(X):
@@ -40,8 +49,9 @@ def calculate_euc_sqr(X):
     D : numpy.ndarray (n, n)
         distance matrix of X.
     """
-    X_sum = np.sum(X**2, axis=1, keepdims=True)
-    D = X_sum - 2*np.dot(X, X.T) + X_sum.T
+    X = torch.tensor(X, dtype=torch.float32).to(device)
+    X_sum = torch.sum(X**2, axis=1, keepdims=True)
+    D = X_sum - 2*torch.matmul(X, X.T) + X_sum.T
     return D
 
 def adjustbeta(X, tol=1e-5, perplexity=30):
@@ -73,7 +83,8 @@ def adjustbeta(X, tol=1e-5, perplexity=30):
     logU = np.log(perplexity)
 
     # Loop over all datapoints
-    for i in range(n):
+    print('choosing best beta...')
+    for i in trange(n):
 
         # Compute the Gaussian kernel and entropy for the current precision
         betamin = -np.inf
@@ -109,3 +120,5 @@ def adjustbeta(X, tol=1e-5, perplexity=30):
 
     return P, beta
 
+
+# %%

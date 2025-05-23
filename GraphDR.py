@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.sparse.csgraph import laplacian
 from sklearn.neighbors import kneighbors_graph
+import torch
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def graphdr(X, lambda_=10, no_rotation=True, n_neighbors=10, d=2):
     """
@@ -34,28 +36,20 @@ def graphdr(X, lambda_=10, no_rotation=True, n_neighbors=10, d=2):
     """
     (n, p) = X.shape
 
-    I = np.eye(N=n)
+    I = torch.eye(n).to(device)
     G = kneighbors_graph(X, n_neighbors)
     G = (G + G.T)/2
-    L = laplacian(G)
-    Z = np.dot(np.linalg.inv(I+lambda_*L), X)
+    L = np.array(laplacian(G).todense())
+
+    L = torch.tensor(L, dtype=torch.float32).to(device)
+    X = torch.tensor(X, dtype=torch.float32).to(device)
+    lambda_ = torch.tensor(lambda_, dtype=torch.float32).to(device)
+    Z = torch.matmul(torch.linalg.inv(I+lambda_*L), X)
+    print(Z.shape)
     if no_rotation==False:
-        W = np.linalg.eig(np.dot(X.T, Z)).eigenvectors[:d]
-        Z = np.dot(Z, W)
+        W = torch.linalg.eig(torch.matmul(X.T, Z))[1][:, :d].real
+        print(W.shape)
+        Z = torch.matmul(Z, W)
 
-    return np.array(Z)
-
-# # %%
-# import pickle
-# with open('hochgerner/pca_data.pkl', 'rb') as f:
-#     pca_data = pickle.load(f)
-# anno = pd.read_csv('hochgerner/hochgerner_2018.anno',sep='\t',header=None)
-# anno = anno[1].values
-
-# graphdr_data  = graphdr(pca_data, lambda_=10, no_rotation=True)
-
-# plt.figure(figsize=(15,10))
-# sns.scatterplot(x=graphdr_data[:,0], y=graphdr_data[:,1], linewidth = 0, s=3, hue=anno)
-# plt.xlabel('GraphDR 1')
-# plt.ylabel('GraphDR 2')
-# %%
+    Z = Z.cpu().detach().numpy()
+    return Z

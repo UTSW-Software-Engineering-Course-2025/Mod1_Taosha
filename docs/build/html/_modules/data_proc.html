@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="Python" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>data_proc &#8212; Mod1 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=afdf7161"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for data_proc</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
+
+<span class="k">def</span> <span class="nf">load_pkl</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="read_data">
+<a class="viewcode-back" href="../usage.html#data_proc.read_data">[docs]</a>
+<span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;customized&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">data_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">label_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper for data processing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Name of dataset: &#39;hochgerner&#39;, &#39;mnist2500&#39;, or &#39;customized&#39;</span>
+
+<span class="sd">    data : numpy.ndarray (n,d)</span>
+<span class="sd">        Data array, required if name = customized and data_path = None</span>
+
+<span class="sd">    labels : numpy.ndarray (n, 1)</span>
+<span class="sd">        Labels for data points</span>
+
+<span class="sd">    process: bool</span>
+<span class="sd">        Whether to process/normalize the data. default: True</span>
+<span class="sd">    </span>
+<span class="sd">    data_path: path</span>
+<span class="sd">        required if name = customized and data_path = False. But be a Pandas DataFrame (samples, features) or (features, samples) if process = True</span>
+<span class="sd">    </span>
+<span class="sd">    label_path: path</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data : numpy.ndarray (samples, features)</span>
+<span class="sd">        feature matrix for training</span>
+
+<span class="sd">    labels: numpy.ndarray (samples, 1)</span>
+<span class="sd">        Labels for data points</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;mnist2500&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">load_pkl</span><span class="p">(</span><span class="s1">&#39;datasets/mnist2500/pca_data.pkl&#39;</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s2">&quot;datasets/mnist2500/mnist2500_labels.txt&quot;</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;hochgerner&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">load_pkl</span><span class="p">(</span><span class="s1">&#39;datasets/hochgerner/pca_data.pkl&#39;</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;datasets/hochgerner/hochgerner_2018.anno&#39;</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;customized&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">data_path</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">label_path</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">label_path</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">process</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1">#We will first normalize each cell by total count per cell.</span>
+            <span class="n">percell_sum</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">pergene_sum</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">preprocessed_data</span> <span class="o">=</span> <span class="n">data</span> <span class="o">/</span> <span class="n">percell_sum</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">percell_sum</span><span class="p">)</span>
+            <span class="n">preprocessed_data</span> <span class="o">=</span> <span class="n">preprocessed_data</span><span class="o">.</span><span class="n">values</span>
+
+            <span class="c1">#transform the preprocessed_data array by `x := log (1+x)`</span>
+            <span class="n">preprocessed_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">preprocessed_data</span><span class="p">)</span>
+
+            <span class="c1">#standard scaling</span>
+            <span class="n">preprocessed_data_mean</span> <span class="o">=</span> <span class="n">preprocessed_data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">preprocessed_data_std</span> <span class="o">=</span> <span class="n">preprocessed_data</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">preprocessed_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">preprocessed_data</span> <span class="o">-</span> <span class="n">preprocessed_data_mean</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">/</span> \
+                                <span class="n">preprocessed_data_std</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+            
+            <span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">pca</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">preprocessed_data</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">preprocessed_data</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Name must be mnist2500, hochgerner or customized!&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">labels</span></div>
+
+
+
+    
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Mod1</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

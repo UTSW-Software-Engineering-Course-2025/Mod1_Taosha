@@ -38,7 +38,7 @@ def plot_scatter(data, labels=None, dimension='2d', savepath='output/scatter.png
         plt.savefig(savepath)
     elif dimension == '3d':
         z = data[:, 2]
-        fig = px.scatter_3d(x=x, y=y, z=z, color=labels, size=5)
+        fig = px.scatter_3d(x=x, y=y, z=z, color=labels, size_max=1)
         fig.write_image(savepath)
 
 def wrap(data_name, data_path=None, label_path=None, process=True, method='graphdr', 
@@ -51,6 +51,14 @@ def wrap(data_name, data_path=None, label_path=None, process=True, method='graph
     Parameters
     ----------
     **kwargs: parameters for data processing, visualization and tsne/graphdr function.
+
+    Returns
+    -------
+    Y : numpy.ndarray (samples, dims_keep)
+        result matrix
+
+    labels: numpy.ndarray (samples, 1)
+        Labels for data points
     """
     print('Reading data...')
     data, labels = read_data(name=data_name, data_path=data_path, label_path=label_path, process=process)
@@ -65,8 +73,9 @@ def wrap(data_name, data_path=None, label_path=None, process=True, method='graph
     print('Plotting...')
     plot_scatter(data=Y, labels=labels, dimension=plot_dim, savepath=plot_savepath)
     print('Done!')
+    return Y, labels
 
-# wrap(data_name='mnist2500', method='tsne')
+# wrap(data_name='hochgerner', method='graphdr')
 
 #%%
 if __name__ == '__main__':

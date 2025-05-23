@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html lang="Python" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphDR &#8212; Mod1 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=afdf7161"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for GraphDR</h1><div class="highlight"><pre>
+<span></span><span class="c1"># %%</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse.csgraph</span> <span class="kn">import</span> <span class="n">laplacian</span>
+<span class="kn">from</span> <span class="nn">sklearn.neighbors</span> <span class="kn">import</span> <span class="n">kneighbors_graph</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="graphdr">
+<a class="viewcode-back" href="../usage.html#GraphDR.graphdr">[docs]</a>
+<span class="k">def</span> <span class="nf">graphdr</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">lambda_</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">no_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dimensional reduction using GraphDR.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : numpy.ndarray (n,d)</span>
+<span class="sd">        data input array</span>
+
+<span class="sd">    lambda_ : float</span>
+<span class="sd">        regularization strength, default: 10</span>
+
+<span class="sd">    no_ratation: bool</span>
+<span class="sd">        perform dimension reduction or not, if True then no reduction. default: True</span>
+<span class="sd">    </span>
+<span class="sd">    n_neighbors: int</span>
+<span class="sd">        size of neighbourhood, default: 10</span>
+<span class="sd">    </span>
+<span class="sd">    d: int</span>
+<span class="sd">        target dimensions, only necessary when no_rotation is False. default: 2</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Z : numpy.ndarray (n, no_dims_keep)</span>
+<span class="sd">        dimensionally reduced matrix of input X  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">I</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">kneighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="p">(</span><span class="n">G</span> <span class="o">+</span> <span class="n">G</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">laplacian</span><span class="p">(</span><span class="n">G</span><span class="p">)</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span>
+
+    <span class="n">L</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">lambda_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">I</span><span class="o">+</span><span class="n">lambda_</span><span class="o">*</span><span class="n">L</span><span class="p">),</span> <span class="n">X</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">no_rotation</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Z</span><span class="p">))[</span><span class="mi">1</span><span class="p">][:,</span> <span class="p">:</span><span class="n">d</span><span class="p">]</span><span class="o">.</span><span class="n">real</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Z</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Mod1</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

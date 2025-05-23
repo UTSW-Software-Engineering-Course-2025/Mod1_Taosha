@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="Python" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cli &#8212; Mod1 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=afdf7161"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cli</h1><div class="highlight"><pre>
+<span></span><span class="c1">#%%</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="kn">from</span> <span class="nn">tsne</span> <span class="kn">import</span> <span class="n">pca</span><span class="p">,</span> <span class="n">tsne</span>
+<span class="kn">from</span> <span class="nn">GraphDR</span> <span class="kn">import</span> <span class="n">graphdr</span>
+<span class="kn">from</span> <span class="nn">data_proc</span> <span class="kn">import</span> <span class="n">read_data</span>
+
+<div class="viewcode-block" id="plot_scatter">
+<a class="viewcode-back" href="../usage.html#cli.plot_scatter">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_scatter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="s1">&#39;2d&#39;</span><span class="p">,</span> <span class="n">savepath</span><span class="o">=</span><span class="s1">&#39;output/scatter.png&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Visualization and save the final plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : numpy.ndarray (n,d)</span>
+<span class="sd">        data input array</span>
+
+<span class="sd">    labels : numpy.ndarray (n, 1)</span>
+<span class="sd">        labels for data points, optional</span>
+
+<span class="sd">    dimension: str</span>
+<span class="sd">        number of dimensions for visualization, &#39;2d&#39; or &#39;3d&#39;. Default: &#39;2d&#39;</span>
+<span class="sd">    </span>
+<span class="sd">    savepath: str</span>
+<span class="sd">        path to save the plot. Default: &#39;output/scatter.png&#39; </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dirpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">savepath</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dirpath</span><span class="p">)</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dirpath</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">dimension</span> <span class="o">==</span> <span class="s1">&#39;2d&#39;</span><span class="p">:</span>
+        <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savepath</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">dimension</span> <span class="o">==</span> <span class="s1">&#39;3d&#39;</span><span class="p">:</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">scatter_3d</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">size_max</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">write_image</span><span class="p">(</span><span class="n">savepath</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="wrap">
+<a class="viewcode-back" href="../usage.html#cli.wrap">[docs]</a>
+<span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">data_name</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;graphdr&#39;</span><span class="p">,</span> 
+         <span class="n">plot_dim</span><span class="o">=</span><span class="s1">&#39;2d&#39;</span><span class="p">,</span> <span class="n">plot_savepath</span><span class="o">=</span><span class="s1">&#39;output/scatter.png&#39;</span><span class="p">,</span> 
+         <span class="n">dims_keep</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">perplexity</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> 
+         <span class="n">lambda_</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">no_rotation</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">n_neighbors</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapping function for command line tools.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    **kwargs: parameters for data processing, visualization and tsne/graphdr function.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Y : numpy.ndarray (samples, dims_keep)</span>
+<span class="sd">        result matrix</span>
+
+<span class="sd">    labels: numpy.ndarray (samples, 1)</span>
+<span class="sd">        Labels for data points</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reading data...&#39;</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">read_data</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">data_name</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="n">data_path</span><span class="p">,</span> <span class="n">label_path</span><span class="o">=</span><span class="n">label_path</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="n">process</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Calculating new matrix...&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;tsne&#39;</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">tsne</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">no_dims_keep</span><span class="o">=</span><span class="n">dims_keep</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="n">perplexity</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;graphdr&#39;</span><span class="p">:</span>
+        <span class="c1"># Y = graphdr(data, lambda_=1, no_rotation=True, n_neighbors=10, d=2)</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">graphdr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">lambda_</span><span class="o">=</span><span class="n">lambda_</span><span class="p">,</span> <span class="n">no_rotation</span><span class="o">=</span><span class="n">no_rotation</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Method must be graphdr or tsne.&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Plotting...&#39;</span><span class="p">)</span>
+    <span class="n">plot_scatter</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">Y</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="n">plot_dim</span><span class="p">,</span> <span class="n">savepath</span><span class="o">=</span><span class="n">plot_savepath</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done!&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Y</span><span class="p">,</span> <span class="n">labels</span></div>
+
+
+<span class="c1"># wrap(data_name=&#39;hochgerner&#39;, method=&#39;graphdr&#39;)</span>
+
+<span class="c1">#%%</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run dimension reduction on given dataset and plot results.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--data_name&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Name of dataset: &#39;hochgerner&#39;, &#39;mnist2500&#39;, or &#39;customized&#39;.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--data_path&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to custom data file. Required if data_name=&#39;customized&#39;.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--label_path&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to label file. Optional.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--data_process&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If set, normalize/process data.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--method&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;graphdr&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tsne&#39;</span><span class="p">,</span> <span class="s1">&#39;graphdr&#39;</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Which method to use. Default: graphdr.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--plot_dim&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;2d&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;2d&#39;</span><span class="p">,</span> <span class="s1">&#39;3d&#39;</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Plot dimension. Default: 2d.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--plot_savepath&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;output/scatter.png&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Where to save the plot. Default: output/scatter.png.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dims_keep&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of dimensions to keep. Default: 2.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--perplexity&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Perplexity for t-SNE. Default: 30.0.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--lambda_val&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Regularization strength for GraphDR. Default: 10.0.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--no_rotation&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If set, disables rotation in GraphDR. Default: True.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--n_neighbors&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of neighbors for GraphDR. Default: 10.&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">data_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">data_name</span>
+    <span class="n">data_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">data_path</span>
+    <span class="n">label_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">label_path</span>
+    <span class="n">data_process</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">data_process</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">method</span>
+    <span class="n">plot_dim</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">plot_dim</span>
+    <span class="n">plot_savepath</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">plot_savepath</span>
+    <span class="n">dims_keep</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">dims_keep</span>
+    <span class="n">perplexity</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">perplexity</span>
+    <span class="n">lambda_val</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">lambda_val</span>
+    <span class="n">no_rotation</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">no_rotation</span>
+    <span class="n">n_neighbors</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n_neighbors</span>
+
+    <span class="n">wrap</span><span class="p">(</span><span class="n">data_name</span><span class="o">=</span><span class="n">data_name</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="n">data_path</span><span class="p">,</span> <span class="n">label_path</span><span class="o">=</span><span class="n">label_path</span><span class="p">,</span> <span class="n">process</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> 
+         <span class="n">plot_dim</span><span class="o">=</span><span class="s1">&#39;2d&#39;</span><span class="p">,</span> <span class="n">plot_savepath</span><span class="o">=</span><span class="s1">&#39;output/scatter.png&#39;</span><span class="p">,</span> 
+         <span class="n">dims_keep</span> <span class="o">=</span> <span class="n">dims_keep</span><span class="p">,</span> <span class="n">perplexity</span> <span class="o">=</span> <span class="n">perplexity</span><span class="p">,</span> 
+         <span class="n">lambda_</span> <span class="o">=</span> <span class="n">lambda_val</span><span class="p">,</span> <span class="n">no_rotation</span> <span class="o">=</span> <span class="n">no_rotation</span><span class="p">,</span> <span class="n">n_neighbors</span> <span class="o">=</span> <span class="n">n_neighbors</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Mod1</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

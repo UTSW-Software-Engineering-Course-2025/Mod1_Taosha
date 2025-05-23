@@ -30,7 +30,7 @@ def read_data(name='customized', data=None, labels=None, process=True,
         Whether to process/normalize the data. default: True
     
     data_path: path
-        required if name = customized and data_path = False. But be a numpy array (samples, features)
+        required if name = customized and data_path = False. But be a Pandas DataFrame (samples, features) or (features, samples) if process = True
     
     label_path: path
 
@@ -52,9 +52,9 @@ def read_data(name='customized', data=None, labels=None, process=True,
         labels = pd.read_csv('datasets/hochgerner/hochgerner_2018.anno',sep='\t',header=None)[1].values
     elif name == 'customized':
         if data_path != None:
-            data = np.load(data_path)
+            data = pd.read_csv(data_path, index_col=0)
         if label_path != None:
-            labels = np.load(data_path)
+            labels = np.load(label_path, allow_pickle=True)
         if process == True:
             #We will first normalize each cell by total count per cell.
             percell_sum = data.sum(axis=0)

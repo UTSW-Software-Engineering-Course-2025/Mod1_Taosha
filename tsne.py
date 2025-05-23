@@ -22,12 +22,12 @@ def pca(X, no_dims=50):
     Y : numpy.ndarray
         low-dimensional representation of input X
     """
-    n, d = X.shape
     X = X - X.mean(axis=0)[None, :]
-    _, M = np.linalg.eig(np.dot(X.T, X))
-    Y = np.real(np.dot(X, M[:, :no_dims]))
+    X = torch.tensor(X, dtype=torch.float32).to(device)
+    _, M = torch.linalg.eig(torch.matmul(X.T, X))
+    Y = torch.real(torch.matmul(X, M[:, :no_dims]))
+    Y = Y.cpu().detach().numpy()
     return Y
-
 
 def norm_dist_matrix(P):
     """
@@ -35,16 +35,16 @@ def norm_dist_matrix(P):
 
     Parameters
     ----------
-    P : numpy.ndarray (n,n)
+    P : torch.float32 (n,n)
         data input array
 
     Returns
     -------
-    P : numpy.ndarray (n, n)
+    P : torch.float32 (n, n)
         normalized matrix of input P 
     """
-    P[np.arange(P.shape[0]), np.arange(P.shape[0])] = 0 # forcing diagnal values to be 0
-    P = P / np.sum(P)  # normalizing to sum to 1
+    P[torch.arange(P.shape[0]), torch.arange(P.shape[0])] = 0 # forcing diagnal values to be 0
+    P = P / torch.sum(P)  # normalizing to sum to 1
     return P
 
 
@@ -90,6 +90,7 @@ def tsne(X, no_dims_keep=2, perplexity=30,
     # P: pairwise affinities
     P_cond, beta = adjustbeta(X, perplexity=perplexity)
     P = (P_cond + P_cond.T) / 2
+    P = torch.tensor(P, dtype=torch.float32).to(device)
     P = norm_dist_matrix(P)
 
     # early exaggerate
@@ -98,20 +99,25 @@ def tsne(X, no_dims_keep=2, perplexity=30,
 
     # initiate
     Y = X[:, :no_dims_keep]
-    delta_Y = np.zeros(shape=(n, no_dims_keep))
-    gains = np.ones(shape=(n, no_dims_keep))
+    Y = torch.tensor(Y, dtype=torch.float32).to(device)
+    delta_Y = torch.zeros((n, no_dims_keep)).to(device)
+    gains = torch.ones((n, no_dims_keep)).to(device)
+    init_momen = torch.tensor(init_momen, dtype=torch.float32).to(device)
+    final_momen = torch.tensor(final_momen, dtype=torch.float32).to(device)
+    eta = torch.tensor(eta, dtype=torch.float32).to(device)
 
     for t in trange(1, T, 1):
         # Q: prob distribution based on Y
-        Q_sum = np.sum(1 / 1 + calculate_euc_sqr(Y))
-        Q = 1 / (1 + calculate_euc_sqr(Y)) / Q_sum
+        D_Y = calculate_euc_sqr(Y)
+        Q_sum = torch.sum(1 / 1 + D_Y)
+        Q = 1 / (1 + D_Y) / Q_sum
         Q = norm_dist_matrix(Q)
         Q[Q < 1e-12] = 1e-12
 
         # dY: gradient of the loss func w.r.t. Y
-        _dY_div = (P - Q) / (1 + calculate_euc_sqr(Y))
-        _dY_diff = Y[:, np.newaxis, :] - Y[np.newaxis, :, :]
-        dY = np.sum(_dY_div[:, :, np.newaxis] * _dY_diff, axis=1)
+        _dY_div = (P - Q) / (1 + D_Y)
+        _dY_diff = Y[:, None, :] - Y[None, :, :]
+        dY = torch.sum(_dY_div[:, :, None] * _dY_diff, axis=1)
 
         if t < 20:
             momentum = init_momen
@@ -127,6 +133,7 @@ def tsne(X, no_dims_keep=2, perplexity=30,
             P = P / 4
         # if t==1:
         #     print(dY)
+    Y = Y.cpu().detach().numpy()
     return Y
 
 

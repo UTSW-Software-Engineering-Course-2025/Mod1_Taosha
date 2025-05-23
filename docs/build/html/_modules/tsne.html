@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="Python" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tsne &#8212; Mod1 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=afdf7161"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for tsne</h1><div class="highlight"><pre>
+<span></span><span class="c1"># %%</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span><span class="p">,</span> <span class="n">trange</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">adjustbeta</span> <span class="kn">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="pca">
+<a class="viewcode-back" href="../usage.html#tsne.pca">[docs]</a>
+<span class="k">def</span> <span class="nf">pca</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">no_dims</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Runs PCA on the nxd array X in order to reduce its dimensionality to</span>
+<span class="sd">    no_dims dimensions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : numpy.ndarray</span>
+<span class="sd">        data input array with dimension (n,d)</span>
+<span class="sd">    no_dims : int</span>
+<span class="sd">        number of dimensions that PCA reduce to</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Y : numpy.ndarray</span>
+<span class="sd">        low-dimensional representation of input X</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">M</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">X</span><span class="p">))</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">M</span><span class="p">[:,</span> <span class="p">:</span><span class="n">no_dims</span><span class="p">]))</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Y</span></div>
+
+
+<span class="k">def</span> <span class="nf">norm_dist_matrix</span><span class="p">(</span><span class="n">P</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize distance matrix P: set diagnal values to 0 and normalize the matrix to sum to 1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    P : torch.float32 (n,n)</span>
+<span class="sd">        data input array</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    P : torch.float32 (n, n)</span>
+<span class="sd">        normalized matrix of input P </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># forcing diagnal values to be 0</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>  <span class="c1"># normalizing to sum to 1</span>
+    <span class="k">return</span> <span class="n">P</span>
+
+
+<div class="viewcode-block" id="tsne">
+<a class="viewcode-back" href="../usage.html#tsne.tsne">[docs]</a>
+<span class="k">def</span> <span class="nf">tsne</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">no_dims_keep</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> 
+         <span class="n">init_momen</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">final_momen</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">eta</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">min_gain</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dimensional reduction using T-SNE.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : numpy.ndarray (n,d)</span>
+<span class="sd">        data input array</span>
+
+<span class="sd">    no_dims_keep : int </span>
+<span class="sd">        target dimensions, default: 2</span>
+<span class="sd">    </span>
+<span class="sd">    perplexity: float</span>
+<span class="sd">        size of neighbourhood, default: 30</span>
+<span class="sd">    </span>
+<span class="sd">    init_momen: float</span>
+<span class="sd">        momentum for early-stage iterations, default: 0.5</span>
+
+<span class="sd">    final_momen: float</span>
+<span class="sd">        momentum for late-stage iterations, default: 0.8</span>
+
+<span class="sd">    eta: float</span>
+<span class="sd">        learning rate, default: 500</span>
+
+<span class="sd">    min_gain: float</span>
+<span class="sd">        minimal gain for each time step, default: 0.2</span>
+
+<span class="sd">    T: int</span>
+<span class="sd">        iteration times, default: 1000</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Y : numpy.ndarray (n, no_dims_keep)</span>
+<span class="sd">        dimensionally reduced matrix of input X </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c1"># P: pairwise affinities</span>
+    <span class="n">P_cond</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">adjustbeta</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="n">perplexity</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="p">(</span><span class="n">P_cond</span> <span class="o">+</span> <span class="n">P_cond</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">norm_dist_matrix</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+
+    <span class="c1"># early exaggerate</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="n">P</span><span class="p">[</span><span class="n">P</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-12</span>
+
+    <span class="c1"># initiate</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">:</span><span class="n">no_dims_keep</span><span class="p">]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">delta_Y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">no_dims_keep</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">gains</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">no_dims_keep</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">init_momen</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">init_momen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">final_momen</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">final_momen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Q: prob distribution based on Y</span>
+        <span class="n">D_Y</span> <span class="o">=</span> <span class="n">calculate_euc_sqr</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+        <span class="n">Q_sum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span> <span class="o">/</span> <span class="n">Q_sum</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">norm_dist_matrix</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>
+        <span class="n">Q</span><span class="p">[</span><span class="n">Q</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-12</span>
+
+        <span class="c1"># dY: gradient of the loss func w.r.t. Y</span>
+        <span class="n">_dY_div</span> <span class="o">=</span> <span class="p">(</span><span class="n">P</span> <span class="o">-</span> <span class="n">Q</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span>
+        <span class="n">_dY_diff</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">Y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="n">dY</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_dY_div</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">_dY_diff</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">20</span><span class="p">:</span>
+            <span class="n">momentum</span> <span class="o">=</span> <span class="n">init_momen</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">momentum</span> <span class="o">=</span> <span class="n">final_momen</span>
+        <span class="n">gains</span> <span class="o">=</span> <span class="p">(</span><span class="n">gains</span> <span class="o">+</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">*</span> <span class="p">((</span><span class="n">dY</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">delta_Y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="n">gains</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">dY</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">delta_Y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">gains</span><span class="p">[</span><span class="n">gains</span> <span class="o">&lt;</span> <span class="n">min_gain</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_gain</span>
+        <span class="n">delta_Y</span> <span class="o">=</span> <span class="n">momentum</span> <span class="o">*</span> <span class="n">delta_Y</span> <span class="o">-</span> <span class="n">eta</span> <span class="o">*</span> <span class="p">(</span><span class="n">gains</span> <span class="o">*</span> <span class="n">dY</span><span class="p">)</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">delta_Y</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">/</span> <span class="mi">4</span>
+        <span class="c1"># if t==1:</span>
+        <span class="c1">#     print(dY)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Y</span></div>
+
+
+
+<span class="c1"># if __name__ == &quot;__main__&quot;:</span>
+<span class="c1">#     os.chdir(&#39;/Users/gaw/utsw/software_engineering/Module_1_materials/day1/tsne_practice&#39;)</span>
+<span class="c1">#     print(&quot;Run Y = tsne(X, no_dims, perplexity) to perform t-SNE on your dataset.&quot;)</span>
+<span class="c1">#     print(&quot;Running example on 2,500 MNIST digits...&quot;)</span>
+<span class="c1">#     X = np.loadtxt(&quot;mnist2500/mnist2500_X.txt&quot;)</span>
+<span class="c1">#     X = pca(X, 50)</span>
+<span class="c1">#     labels = np.loadtxt(&quot;mnist2500/mnist2500_labels.txt&quot;)</span>
+<span class="c1">#     Y = tsne(X)</span>
+<span class="c1">#     plt.scatter(Y[:, 0], Y[:, 1], 20, labels)</span>
+<span class="c1">#     plt.savefig(&quot;mnist2500/mnist_tsne.png&quot;)</span>
+
+
+<span class="c1"># %%</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Mod1</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
