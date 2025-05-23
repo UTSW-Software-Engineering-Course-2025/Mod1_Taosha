@@ -16,3 +16,26 @@ cli.py [-h] --data_name DATA_NAME [--data_path DATA_PATH] [--label_path LABEL_PA
 TSNE: from tsne import tsne
 
 GraphDR: from GraphDR import graphdr
+
+
+## File Structure
+```
+mod1
+├─ GraphDR.py
+├─ GraphDR_viz.ipynb
+├─ README.md
+├─ __init__.py
+├─ adjustbeta.py
+├─ cli.py
+├─ data_proc.py
+├─ datasets
+│  ├─ hochgerner
+│  ├─ mnist2500
+│  └─ wang
+├─ demo.ipynb
+├─ docs
+├─ output
+├─ requirements.txt
+└─ tsne.py
+
+```
