@@ -14,4 +14,5 @@ python cli.py [-h] --data_name DATA_NAME [--data_path DATA_PATH] [--label_path L
 
 # Import as a Python library
 TSNE: from tsne import tsne
+
 GraphDR: from GraphDR import graphdr
