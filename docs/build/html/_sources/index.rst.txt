@@ -16,6 +16,35 @@ This is a Python library for TSNE[1] and GraphDR[2] algorithms and data visualiz
    :maxdepth: 2
    :caption: Contents:
 
+
+Features
+=========
+
+Basics:
+---------------------
+
+
+TSNE/GraphDR calculation
+
+plot 2d/3d visualization
+
+docs
+
+
+Extended
+---------------------
+
+GPU support
+
+New dataset support
+
+Wrapper functions (for data processing and pipeline running)
+
+Command line tools
+
+3d interactive visualization (to be integrated)
+
+
 Contents
 =========
 

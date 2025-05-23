@@ -43,7 +43,9 @@ def norm_dist_matrix(P):
     P : torch.float32 (n, n)
         normalized matrix of input P 
     """
-    P[torch.arange(P.shape[0]), torch.arange(P.shape[0])] = 0 # forcing diagnal values to be 0
+    n = P.shape[0]
+    P[torch.arange(n), torch.arange(n)] = 0 # forcing diagnal values to be 0
+    P = torch.nan_to_num(P, nan=0.0, posinf=torch.max(P), neginf=torch.min(P))
     P = P / torch.sum(P)  # normalizing to sum to 1
     return P
 
@@ -95,7 +97,7 @@ def tsne(X, no_dims_keep=2, perplexity=30,
 
     # early exaggerate
     P = P * 4
-    P[P < 1e-12] = 1e-12
+    P = torch.clamp(P, min=1e-12, max=1e12)
 
     # initiate
     Y = X[:, :no_dims_keep]
@@ -106,16 +108,17 @@ def tsne(X, no_dims_keep=2, perplexity=30,
     final_momen = torch.tensor(final_momen, dtype=torch.float32).to(device)
     eta = torch.tensor(eta, dtype=torch.float32).to(device)
 
-    for t in trange(1, T, 1):
+    for t in trange(T):
         # Q: prob distribution based on Y
         D_Y = calculate_euc_sqr(Y)
-        Q_sum = torch.sum(1 / 1 + D_Y)
-        Q = 1 / (1 + D_Y) / Q_sum
+        D_Y_inv = 1 / (1 + D_Y)
+        D_Y_inv_sum = torch.sum(D_Y_inv)
+        Q = D_Y_inv / D_Y_inv_sum
         Q = norm_dist_matrix(Q)
-        Q[Q < 1e-12] = 1e-12
+        Q = torch.clamp(Q, min=1e-12, max=1e12)
 
         # dY: gradient of the loss func w.r.t. Y
-        _dY_div = (P - Q) / (1 + D_Y)
+        _dY_div = (P - Q) * D_Y_inv
         _dY_diff = Y[:, None, :] - Y[None, :, :]
         dY = torch.sum(_dY_div[:, :, None] * _dY_diff, axis=1)
 
@@ -131,22 +134,8 @@ def tsne(X, no_dims_keep=2, perplexity=30,
         Y = Y + delta_Y
         if t == 100:
             P = P / 4
-        # if t==1:
+        # if t==0:
         #     print(dY)
     Y = Y.cpu().detach().numpy()
     return Y
 
-
-# if __name__ == "__main__":
-#     os.chdir('/Users/gaw/utsw/software_engineering/Module_1_materials/day1/tsne_practice')
-#     print("Run Y = tsne(X, no_dims, perplexity) to perform t-SNE on your dataset.")
-#     print("Running example on 2,500 MNIST digits...")
-#     X = np.loadtxt("mnist2500/mnist2500_X.txt")
-#     X = pca(X, 50)
-#     labels = np.loadtxt("mnist2500/mnist2500_labels.txt")
-#     Y = tsne(X)
-#     plt.scatter(Y[:, 0], Y[:, 1], 20, labels)
-#     plt.savefig("mnist2500/mnist_tsne.png")
-
-
-# %%

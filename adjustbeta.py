@@ -41,12 +41,12 @@ def calculate_euc_sqr(X):
 
     Parameters
     ----------
-    X : numpy.ndarray (n,d)
+    X : torch tensor (n,d)
         data input array
 
     Returns
     -------
-    D : numpy.ndarray (n, n)
+    D : torch tensor (n, n)
         distance matrix of X.
     """
     X = torch.tensor(X, dtype=torch.float32).to(device)

@@ -43,7 +43,7 @@ def plot_scatter(data, labels=None, dimension='2d', savepath='output/scatter.png
 
 def wrap(data_name, data_path=None, label_path=None, process=True, method='graphdr', 
          plot_dim='2d', plot_savepath='output/scatter.png', 
-         dims_keep = 2, perplexity = 30, 
+         dims_keep = 2, perplexity = 30, T = 50,
          lambda_ = 10, no_rotation = True, n_neighbors = 10):
     """
     Wrapping function for command line tools.
@@ -64,7 +64,7 @@ def wrap(data_name, data_path=None, label_path=None, process=True, method='graph
     data, labels = read_data(name=data_name, data_path=data_path, label_path=label_path, process=process)
     print('Calculating new matrix...')
     if method == 'tsne':
-        Y = tsne(data, no_dims_keep=dims_keep, perplexity=perplexity)
+        Y = tsne(data, no_dims_keep=dims_keep, perplexity=perplexity, T=T)
     elif method == 'graphdr':
         # Y = graphdr(data, lambda_=1, no_rotation=True, n_neighbors=10, d=2)
         Y = graphdr(data, lambda_=lambda_, no_rotation=no_rotation, n_neighbors=n_neighbors)
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot_savepath', type=str, default='output/scatter.png', help="Where to save the plot. Default: output/scatter.png.")
     parser.add_argument('--dims_keep', type=int, default=2, help="Number of dimensions to keep. Default: 2.")
     parser.add_argument('--perplexity', type=float, default=30.0, help="Perplexity for t-SNE. Default: 30.0.")
+    parser.add_argument('--T', type=int, default=50, help="Number of iterations for t-SNE. Default: 50.")
     parser.add_argument('--lambda_val', type=float, default=10.0, help="Regularization strength for GraphDR. Default: 10.0.")
     parser.add_argument('--no_rotation', action='store_false', help="If set, disables rotation in GraphDR. Default: True.")
     parser.add_argument('--n_neighbors', type=int, default=10, help="Number of neighbors for GraphDR. Default: 10.")
@@ -103,11 +104,12 @@ if __name__ == '__main__':
     plot_savepath = args.plot_savepath
     dims_keep = args.dims_keep
     perplexity = args.perplexity
+    T = args.T
     lambda_val = args.lambda_val
     no_rotation = args.no_rotation
     n_neighbors = args.n_neighbors
 
     wrap(data_name=data_name, data_path=data_path, label_path=label_path, process=True, method=method, 
-         plot_dim='2d', plot_savepath='output/scatter.png', 
-         dims_keep = dims_keep, perplexity = perplexity, 
+         plot_dim='2d', plot_savepath=plot_savepath, 
+         dims_keep = dims_keep, perplexity = perplexity, T=T, 
          lambda_ = lambda_val, no_rotation = no_rotation, n_neighbors = n_neighbors)

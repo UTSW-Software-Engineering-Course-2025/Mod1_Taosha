@@ -10,6 +10,7 @@
     <script src="../_static/documentation_options.js?v=afdf7161"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
    
@@ -78,7 +79,9 @@
 <span class="sd">    P : torch.float32 (n, n)</span>
 <span class="sd">        normalized matrix of input P </span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">P</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># forcing diagnal values to be 0</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">P</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># forcing diagnal values to be 0</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">nan</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">posinf</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">P</span><span class="p">),</span> <span class="n">neginf</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">P</span><span class="p">))</span>
     <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>  <span class="c1"># normalizing to sum to 1</span>
     <span class="k">return</span> <span class="n">P</span>
 
@@ -132,7 +135,7 @@
 
     <span class="c1"># early exaggerate</span>
     <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">*</span> <span class="mi">4</span>
-    <span class="n">P</span><span class="p">[</span><span class="n">P</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-12</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>
 
     <span class="c1"># initiate</span>
     <span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">:</span><span class="n">no_dims_keep</span><span class="p">]</span>
@@ -143,16 +146,17 @@
     <span class="n">final_momen</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">final_momen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">eta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
         <span class="c1"># Q: prob distribution based on Y</span>
         <span class="n">D_Y</span> <span class="o">=</span> <span class="n">calculate_euc_sqr</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
-        <span class="n">Q_sum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span>
-        <span class="n">Q</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span> <span class="o">/</span> <span class="n">Q_sum</span>
+        <span class="n">D_Y_inv</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span>
+        <span class="n">D_Y_inv_sum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">D_Y_inv</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">D_Y_inv</span> <span class="o">/</span> <span class="n">D_Y_inv_sum</span>
         <span class="n">Q</span> <span class="o">=</span> <span class="n">norm_dist_matrix</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>
-        <span class="n">Q</span><span class="p">[</span><span class="n">Q</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-12</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>
 
         <span class="c1"># dY: gradient of the loss func w.r.t. Y</span>
-        <span class="n">_dY_div</span> <span class="o">=</span> <span class="p">(</span><span class="n">P</span> <span class="o">-</span> <span class="n">Q</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">D_Y</span><span class="p">)</span>
+        <span class="n">_dY_div</span> <span class="o">=</span> <span class="p">(</span><span class="n">P</span> <span class="o">-</span> <span class="n">Q</span><span class="p">)</span> <span class="o">*</span> <span class="n">D_Y_inv</span>
         <span class="n">_dY_diff</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">Y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
         <span class="n">dY</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_dY_div</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">_dY_diff</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -168,26 +172,12 @@
         <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">delta_Y</span>
         <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
             <span class="n">P</span> <span class="o">=</span> <span class="n">P</span> <span class="o">/</span> <span class="mi">4</span>
-        <span class="c1"># if t==1:</span>
-        <span class="c1">#     print(dY)</span>
+        <span class="k">if</span> <span class="n">t</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">dY</span><span class="p">)</span>
     <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">Y</span></div>
 
 
-
-<span class="c1"># if __name__ == &quot;__main__&quot;:</span>
-<span class="c1">#     os.chdir(&#39;/Users/gaw/utsw/software_engineering/Module_1_materials/day1/tsne_practice&#39;)</span>
-<span class="c1">#     print(&quot;Run Y = tsne(X, no_dims, perplexity) to perform t-SNE on your dataset.&quot;)</span>
-<span class="c1">#     print(&quot;Running example on 2,500 MNIST digits...&quot;)</span>
-<span class="c1">#     X = np.loadtxt(&quot;mnist2500/mnist2500_X.txt&quot;)</span>
-<span class="c1">#     X = pca(X, 50)</span>
-<span class="c1">#     labels = np.loadtxt(&quot;mnist2500/mnist2500_labels.txt&quot;)</span>
-<span class="c1">#     Y = tsne(X)</span>
-<span class="c1">#     plt.scatter(Y[:, 0], Y[:, 1], 20, labels)</span>
-<span class="c1">#     plt.savefig(&quot;mnist2500/mnist_tsne.png&quot;)</span>
-
-
-<span class="c1"># %%</span>
 </pre></div>
 
           </div>

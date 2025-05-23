@@ -1,4 +1,3 @@
-# %%
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -53,3 +52,4 @@ def graphdr(X, lambda_=10, no_rotation=True, n_neighbors=10, d=2):
 
     Z = Z.cpu().detach().numpy()
     return Z
+
